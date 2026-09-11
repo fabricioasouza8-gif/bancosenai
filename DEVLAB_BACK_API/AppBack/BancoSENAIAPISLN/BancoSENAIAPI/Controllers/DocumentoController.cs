@@ -48,6 +48,10 @@ namespace BancoSENAIAPI.Controllers
                 Caminho = caminhoFinal,
                 CodigoCliente = codigoCliente
             };
+
+            _documentosMetadados.Add(documentoMetadados);
+
+            return Ok(new { mensagem = "Documento anexado com sucesso", arquivoSalvo = novoNome });
         }
     }
 }
