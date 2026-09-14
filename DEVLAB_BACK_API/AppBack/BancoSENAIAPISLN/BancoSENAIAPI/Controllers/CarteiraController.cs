@@ -1,72 +1,43 @@
 ﻿using BancoSENAIAPI.Models;
-<<<<<<< Updated upstream
-using Microsoft.AspNetCore.Http;
-=======
->>>>>>> Stashed changes
 using Microsoft.AspNetCore.Mvc;
 
 namespace BancoSENAIAPI.Controllers
 {
-<<<<<<< Updated upstream
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CarteiraController : ControllerBase
-    {
-        private static List<Carteira> _carteira = new List<Carteira>
-=======
     [ApiController]
     [Route("api/v1/[controller]")]
     public class CarteiraController : ControllerBase
     {
         private static List<Carteira> _carteiras = new List<Carteira>
->>>>>>> Stashed changes
         {
             new Carteira
             {
                 NumeroCarteira = 1,
                 NomeCarteira = "Agro",
-<<<<<<< Updated upstream
                 ApetiteCarteira = 100000
             },
-=======
-                ApetiteCarteira = 1000000
-            },
 
->>>>>>> Stashed changes
             new Carteira
             {
                 NumeroCarteira = 2,
                 NomeCarteira = "Varejo",
-<<<<<<< Updated upstream
                 ApetiteCarteira = 15000000
             },
-=======
-                ApetiteCarteira = 1500000
-            },
 
->>>>>>> Stashed changes
             new Carteira
             {
                 NumeroCarteira = 3,
                 NomeCarteira = "Atacado",
-<<<<<<< Updated upstream
                 ApetiteCarteira = 20000000
             }
 
 
         };
-        [HttpGet]
-        public IActionResult Get()
-        {
-            return Ok(_carteira);
-        }
-
 
         // GET: api/Carteira/1
         [HttpGet("{numeroCarteira}")]
         public IActionResult Get(int numeroCarteira)
         {
-            var carteira = _carteira.FirstOrDefault(
+            var carteira = _carteiras.FirstOrDefault(
                 c => c.NumeroCarteira == numeroCarteira
             );
 
@@ -77,13 +48,6 @@ namespace BancoSENAIAPI.Controllers
 
             return Ok(carteira);
         }
-    }
-        
-    }
-=======
-                ApetiteCarteira = 2000000
-            }
-        };
 
         [HttpGet]
         public IActionResult ListarTodas()
@@ -142,15 +106,6 @@ namespace BancoSENAIAPI.Controllers
 
             return Ok(new { message = "Carteira apagada com sucesso." });
         }
-
-
-
-
-
-
-
-
     }
-
+        
 }
->>>>>>> Stashed changes

@@ -2,10 +2,6 @@
 {
     public class Cliente
     {
-<<<<<<< Updated upstream
-    }
-}
-=======
         public int CodigoCliente { get; set; }
 
         public string NomeCliente { get; set; }
@@ -27,4 +23,3 @@
         public string Estado { get; set; }
     }
 }
->>>>>>> Stashed changes
