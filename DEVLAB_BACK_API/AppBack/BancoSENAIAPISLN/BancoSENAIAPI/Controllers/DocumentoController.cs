@@ -13,16 +13,48 @@ namespace BancoSENAIAPI.Controllers
         private static List<Models.DocumentoMetadado> _documentosMetadados = new List<Models.DocumentoMetadado>();
 
         private static int _nextId = 1;
+        private const long tamanhoMaximo = 2 * 1024 * 1024;
+        private readonly string[] _extensoesPermitidas = { ".pdf", ".jpg", ".png" };
 
         [HttpPost("upload/{codigoCliente}")]
         public async Task<IActionResult> AnexarArquivo(int codigoCliente, IFormFile arquivo)
         {
-           if (arquivo == null || arquivo.Length == 0)
+            if(arquivo == null || arquivo.Length == 0)
+            {
+                return BadRequest(new { erro = "Nenhum arquivo foi enviado." });
+            }
+
+            if (arquivo.Length > tamanhoMaximo)
+            {
+                return BadRequest(new
+                {
+                    erro = "Regra R06F Violada: O arquivo excede o tamanho máximo permitido de 2 MB."
+                });
+            }
+
+            string extensao1 = Path.GetExtension(arquivo.FileName).ToLowerInvariant();
+
+            if (!_extensoesPermitidas.Contains(extensao1))
+            {
+                return BadRequest(new
+                {
+                    erro = $"Regra R06G Violada: Extensão '{extensao1}' inválida. Extensões permitidas: {string.Join(", ", _extensoesPermitidas)}."
+                });
+            }
+
+            string pastaCliente = Path.Combine(_caminhoRaiz, codigoCliente.ToString());
+            if (!Directory.Exists(pastaCliente))
+            {
+                Directory.CreateDirectory(pastaCliente);
+            }
+
+
+            if (arquivo == null || arquivo.Length == 0)
             {
                 return BadRequest("Nenhum arquivo foi enviado");
             }
 
-            string pastaCliente = Path.Combine(_caminhoRaiz, codigoCliente.ToString());
+           
 
             if (Directory.Exists(pastaCliente))
             {
@@ -112,6 +144,8 @@ namespace BancoSENAIAPI.Controllers
 
             return Ok(new { mensagem = "Documento e arquivo físico excluídos com sucesso." });
         }
+
+       
         
     }
 }
