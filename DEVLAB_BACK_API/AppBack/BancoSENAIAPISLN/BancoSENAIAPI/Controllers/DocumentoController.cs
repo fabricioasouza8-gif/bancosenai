@@ -144,6 +144,7 @@ namespace BancoSENAIAPI.Controllers
 
             return Ok(new { mensagem = "Documento e arquivo físico excluídos com sucesso." });
         }
+       
 
        
         
