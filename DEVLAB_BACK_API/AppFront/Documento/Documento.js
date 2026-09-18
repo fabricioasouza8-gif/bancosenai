@@ -1,4 +1,4 @@
-const URL_API = "https://localhost:7081/api/v1/Documentos"
+const URL_API = "https://localhost:7081"
 
 async function enviarDocumento() {
 
@@ -24,8 +24,8 @@ async function enviarDocumento() {
         document.getElementById("codigoCliente").value = "";
         document.getElementById("arquivo").value = "";
     } else {
-        const erro = await response.json();
-        alert("Erro: " + (erro.message || "Falha ao enviar o documento"));
+       
+        alert("Erro: " + ("Falha ao enviar o documento"));
     }
        
 }
