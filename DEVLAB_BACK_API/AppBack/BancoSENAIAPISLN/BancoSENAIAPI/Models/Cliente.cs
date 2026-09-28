@@ -2,30 +2,14 @@
 {
     public class Cliente
     {
-        public int CodigoCliente { get; set; }
+        public int Codigo { get; set; }
 
-        public string NomeCliente { get; set; }
+        public string Nome { get; set; }
 
-        public string CPF { get; set; }
-
-        public decimal Saldo { get; set; } = 0.0m;
+        public string Cpf { get; set; }
 
         public int NumeroAgencia { get; set; }
 
-<<<<<<< Updated upstream
-        public decimal SaldoTotal { get; set; }
-
-        public DateTime DataNascimento { get; set; }
-
-        public string Sexo { get; set; }
-
-        public string Endereco { get; set; }
-
-        public string Cidade { get; set; }
-
-        public string Estado { get; set; }
-=======
-
->>>>>>> Stashed changes
+        public decimal Saldo { get; set; } = 0.0m;
     }
 }
