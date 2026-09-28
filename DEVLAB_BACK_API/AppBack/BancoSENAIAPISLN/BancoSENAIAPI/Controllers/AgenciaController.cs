@@ -16,7 +16,6 @@ namespace BancoSENAIAPI.Controllers
             _context = context;
         }
 
-
         [HttpGet]
         public async Task<IActionResult> ListarTodas()
         {
@@ -51,7 +50,7 @@ namespace BancoSENAIAPI.Controllers
         }
 
         [HttpPut("{codigo}")]
-         public async Task<IActionResult> Alterar(int codigo, [FromBody] Agencia agenciaAtualizada)
+        public async Task<IActionResult> Alterar(int codigo, [FromBody] Agencia agenciaAtualizada)
         {
             var agenciaExistente = await _context.Agencia.FirstOrDefaultAsync(a => a.NumeroAgencia == codigo);
 

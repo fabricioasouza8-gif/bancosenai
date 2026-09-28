@@ -1,5 +1,7 @@
-﻿using BancoSENAIAPI.Models;
+﻿using BancoSENAIAPI.Data;
+using BancoSENAIAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BancoSENAIAPI.Controllers
 {
@@ -7,56 +9,41 @@ namespace BancoSENAIAPI.Controllers
     [Route("api/v1/[controller]")]
     public class CarteiraController : ControllerBase
     {
-        private static List<Carteira> _carteiras = new List<Carteira>
+
+        private readonly AppDbContext _context;
+
+        public CarteiraController(AppDbContext context)
         {
-            new Carteira
-            {
-                NumeroCarteira = 1,
-                NomeCarteira = "Agro",
-                ApetiteCarteira = 100000
-            },
+            _carteiras = context;
+        }
 
-            new Carteira
-            {
-                NumeroCarteira = 2,
-                NomeCarteira = "Varejo",
-                ApetiteCarteira = 15000000
-            },
+        [HttpGet]
+        public async Task<IActionResult> ListarTodas()
+        {
+            var carteiras = await _context.Carteira.ToListAsync();
+            return Ok(carteiras);
+        }
 
-            new Carteira
-            {
-                NumeroCarteira = 3,
-                NomeCarteira = "Atacado",
-                ApetiteCarteira = 20000000
-            }
-
-
-        };
 
         // GET: api/Carteira/1
-        [HttpGet("{numeroCarteira}")]
-        public IActionResult Get(int numeroCarteira)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> ConsultarPorId(int id)
         {
-            var carteira = _carteiras.FirstOrDefault(
-                c => c.NumeroCarteira == numeroCarteira
-            );
-
+            var carteira = await _context.Carteira.FirstOrDefaultAsync(c => c.Id == id);
             if (carteira == null)
-            {
-                return NotFound("Carteira não encontrada.");
-            }
+                return NotFound(new { message = "Carteira não encontrada." });
 
             return Ok(carteira);
         }
 
         [HttpGet]
-        public IActionResult ListarTodas()
+        public async Task<IActionResult> ListarTodas()
         {
             return Ok(_carteiras);
         }
 
         [HttpPost]
-        public IActionResult Cadastrar([FromBody] Carteira novaCarteira)
+        public async Task<IActionResult> Cadastrar([FromBody] Carteira novaCarteira)
         {
             if (_carteiras.Any(c => c.NumeroCarteira == novaCarteira.NumeroCarteira))
             {
@@ -73,7 +60,7 @@ namespace BancoSENAIAPI.Controllers
             return Created("", novaCarteira);
         }
         [HttpPut("{numero}")]
-        public IActionResult Atualizar(int numero, [FromBody] Carteira carteiraAtualizada)
+        public async Task<IActionResult> Atualizar(int numero, [FromBody] Carteira carteiraAtualizada)
         {
             var carteira = _carteiras.FirstOrDefault(c => c.NumeroCarteira == numero);
 
@@ -93,7 +80,7 @@ namespace BancoSENAIAPI.Controllers
             return Ok(carteira);
         }
         [HttpDelete("{numero}")]
-        public IActionResult Apagar(int numero)
+        public async Task<IActionResult> Apagar(int numero)
         {
             var carteira = _carteiras.FirstOrDefault(c => c.NumeroCarteira == numero);
 
