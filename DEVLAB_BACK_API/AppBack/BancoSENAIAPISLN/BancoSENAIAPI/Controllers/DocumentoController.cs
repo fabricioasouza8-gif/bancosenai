@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BancoSENAIAPI.Data;
+using BancoSENAIAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BancoSENAIAPI.Controllers
 {
@@ -6,89 +9,182 @@ namespace BancoSENAIAPI.Controllers
     [Route("api/v1/[controller]")]
     public class DocumentoController : ControllerBase
     {
+        private readonly AppDbContext _context;
 
-        private readonly string _caminhoRaiz = Path.Combine(Directory.GetCurrentDirectory(), "ClienteArquivos");
-        private static List<Models.DocumentoMetadados> _documentosMetadados = new List<Models.DocumentoMetadados>();
-        private static int _nextId = 1;
+        private readonly string _caminhoRaiz =
+            Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "ClienteArquivos"
+            );
 
+        public DocumentoController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // POST: api/v1/Documento/upload/1
         [HttpPost("upload/{codigoCliente}")]
-        public async Task<IActionResult> AnexarArquivo(int codigoCliente, IFormFile arquivo)
+        public async Task<IActionResult> AnexarArquivo(
+            int codigoCliente,
+            IFormFile arquivo)
         {
             if (arquivo == null || arquivo.Length == 0)
-                return BadRequest("Nenhum arquivo foi enviado.");
+            {
+                return BadRequest(new
+                {
+                    message = "Nenhum arquivo foi enviado."
+                });
+            }
 
-            string pastaCliente = Path.Combine(_caminhoRaiz, codigoCliente.ToString());
+            var cliente = await _context.Cliente
+                .FirstOrDefaultAsync(c => c.Codigo == codigoCliente);
+
+            if (cliente == null)
+            {
+                return NotFound(new
+                {
+                    message = "Cliente não encontrado."
+                });
+            }
+
+            string pastaCliente = Path.Combine(
+                _caminhoRaiz,
+                codigoCliente.ToString()
+            );
 
             if (!Directory.Exists(pastaCliente))
+            {
                 Directory.CreateDirectory(pastaCliente);
+            }
 
             string extensao = Path.GetExtension(arquivo.FileName);
-            string nomeOriginal = Path.GetFileNameWithoutExtension(arquivo.FileName);
-            string novoNome = $"{codigoCliente}_{nomeOriginal}_{Guid.NewGuid()}{extensao}";
 
-            string caminhoFinal = Path.Combine(pastaCliente, novoNome);
+            string nomeOriginal =
+                Path.GetFileNameWithoutExtension(arquivo.FileName);
 
-            using (var stream = new FileStream(caminhoFinal, FileMode.Create))
+            string novoNome =
+                $"{codigoCliente}_{nomeOriginal}_{Guid.NewGuid()}{extensao}";
+
+            string caminhoFinal =
+                Path.Combine(pastaCliente, novoNome);
+
+            using (var stream = new FileStream(
+                caminhoFinal,
+                FileMode.Create))
             {
                 await arquivo.CopyToAsync(stream);
             }
 
-            var documentoMetadados = new Models.DocumentoMetadados
+            var documento = new DocumentoMetadados
             {
-                Id = _nextId++,
                 Nome = nomeOriginal,
                 Extensao = extensao,
                 Caminho = caminhoFinal,
                 CodigoCliente = codigoCliente
             };
 
-            _documentosMetadados.Add(documentoMetadados);
+            await _context.Documento.AddAsync(documento);
 
-            return Ok(new
-            {
-                mensagem = "Documento anexado com sucesso!",
-                arquivoSalvo = novoNome
-            });
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(DownloadDocumento),
+                new { id = documento.Id },
+                new
+                {
+                    mensagem = "Documento anexado com sucesso!",
+                    id = documento.Id,
+                    arquivoSalvo = novoNome
+                }
+            );
         }
 
+        // GET: api/v1/Documento/listar/1
         [HttpGet("listar/{codigoCliente}")]
-        public IActionResult ListarDocumentos(int codigoCliente)
+        public async Task<IActionResult> ListarDocumentos(
+            int codigoCliente)
         {
-            var documentos = _documentosMetadados.Where(d => d.CodigoCliente == codigoCliente).ToList();
+            var documentos = await _context.Documento
+                .Where(d => d.CodigoCliente == codigoCliente)
+                .ToListAsync();
 
             if (!documentos.Any())
-                return NotFound(new { message = "Nenhum documento encontrado para este cliente." });
+            {
+                return NotFound(new
+                {
+                    message = "Nenhum documento encontrado para este cliente."
+                });
+            }
 
             return Ok(documentos);
         }
 
+        // GET: api/v1/Documento/download/1
         [HttpGet("download/{id}")]
-        public IActionResult DownloadDocumento(int id)
+        public async Task<IActionResult> DownloadDocumento(int id)
         {
-            var documento = _documentosMetadados.FirstOrDefault(d => d.Id == id);
+            var documento = await _context.Documento
+                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (documento == null)
-                return NotFound(new { message = "Documento não encontrado." });
+            {
+                return NotFound(new
+                {
+                    message = "Documento não encontrado."
+                });
+            }
 
-            var caminhoArquivo = documento.Caminho;
-            var nomeArquivo = documento.Nome + documento.Extensao;
+            if (!System.IO.File.Exists(documento.Caminho))
+            {
+                return NotFound(new
+                {
+                    message = "Arquivo físico não encontrado."
+                });
+            }
 
-            var fileBytes = System.IO.File.ReadAllBytes(caminhoArquivo);
-            return File(fileBytes, "application/octet-stream", nomeArquivo);
+            var fileBytes =
+                await System.IO.File.ReadAllBytesAsync(
+                    documento.Caminho
+                );
+
+            var nomeArquivo =
+                documento.Nome + documento.Extensao;
+
+            return File(
+                fileBytes,
+                "application/octet-stream",
+                nomeArquivo
+            );
         }
 
+        // DELETE: api/v1/Documento/excluir/1
         [HttpDelete("excluir/{id}")]
-        public IActionResult ExcluirDocumento(int id)
+        public async Task<IActionResult> ExcluirDocumento(int id)
         {
-            var documento = _documentosMetadados.FirstOrDefault(d => d.Id == id);
+            var documento = await _context.Documento
+                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (documento == null)
-                return NotFound(new { message = "Documento não encontrado." });
+            {
+                return NotFound(new
+                {
+                    message = "Documento não encontrado."
+                });
+            }
 
-            _documentosMetadados.Remove(documento);
-            System.IO.File.Delete(documento.Caminho);
+            if (System.IO.File.Exists(documento.Caminho))
+            {
+                System.IO.File.Delete(documento.Caminho);
+            }
 
-            return Ok(new { message = "Documento excluído com sucesso." });
+            _context.Documento.Remove(documento);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Documento excluído com sucesso."
+            });
         }
     }
 }
