@@ -1,5 +1,7 @@
-﻿using BancoSENAIAPI.Models;
+﻿using BancoSENAIAPI.Data;
+using BancoSENAIAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BancoSENAIAPI.Controllers
 {
@@ -7,105 +9,138 @@ namespace BancoSENAIAPI.Controllers
     [Route("api/v1/[controller]")]
     public class CarteiraController : ControllerBase
     {
-        private static List<Carteira> _carteiras = new List<Carteira>
+        private readonly AppDbContext _context;
+
+        public CarteiraController(AppDbContext context)
         {
-            new Carteira
-            {
-                NumeroCarteira = 1,
-                NomeCarteira = "Agro",
-                ApetiteCarteira = 100000
-            },
+            _context = context;
+        }
 
-            new Carteira
-            {
-                NumeroCarteira = 2,
-                NomeCarteira = "Varejo",
-                ApetiteCarteira = 15000000
-            },
-
-            new Carteira
-            {
-                NumeroCarteira = 3,
-                NomeCarteira = "Atacado",
-                ApetiteCarteira = 20000000
-            }
-
-
-        };
-
-        // GET: api/Carteira/1
-        [HttpGet("{numeroCarteira}")]
-        public IActionResult Get(int numeroCarteira)
+        // GET: api/v1/Carteira
+        [HttpGet]
+        public async Task<IActionResult> ListarTodas()
         {
-            var carteira = _carteiras.FirstOrDefault(
-                c => c.NumeroCarteira == numeroCarteira
-            );
+            var carteiras = await _context.Carteira.ToListAsync();
+
+            return Ok(carteiras);
+        }
+
+        // GET: api/v1/Carteira/1
+        [HttpGet("{numero}")]
+        public async Task<IActionResult> ConsultarPorId(int numero)
+        {
+            var carteira = await _context.Carteira
+                .FirstOrDefaultAsync(c => c.NumeroCarteira == numero);
 
             if (carteira == null)
             {
-                return NotFound("Carteira não encontrada.");
+                return NotFound(new
+                {
+                    message = "Carteira não encontrada."
+                });
             }
 
             return Ok(carteira);
         }
 
-        [HttpGet]
-        public IActionResult ListarTodas()
-        {
-            return Ok(_carteiras);
-        }
-
+        // POST: api/v1/Carteira
         [HttpPost]
-        public IActionResult Cadastrar([FromBody] Carteira novaCarteira)
+        public async Task<IActionResult> Cadastrar([FromBody] Carteira novaCarteira)
         {
-            if (_carteiras.Any(c => c.NumeroCarteira == novaCarteira.NumeroCarteira))
+            if (novaCarteira == null)
             {
-                return BadRequest(new { message = "Este número de carteira já existe." });
+                return BadRequest(new
+                {
+                    message = "Dados da carteira são obrigatórios."
+                });
             }
 
             if (novaCarteira.ApetiteCarteira < 0)
             {
-                return BadRequest(new { message = "O apetite da carteira não pode ser negativo." });
+                return BadRequest(new
+                {
+                    message = "O apetite da carteira não pode ser negativo."
+                });
             }
 
-            _carteiras.Add(novaCarteira);
+            var carteiraExistente = await _context.Carteira
+                .FirstOrDefaultAsync(c =>
+                    c.NumeroCarteira == novaCarteira.NumeroCarteira);
 
-            return Created("", novaCarteira);
+            if (carteiraExistente != null)
+            {
+                return BadRequest(new
+                {
+                    message = "Este número de carteira já existe."
+                });
+            }
+
+            await _context.Carteira.AddAsync(novaCarteira);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(ConsultarPorId),
+                new { numero = novaCarteira.NumeroCarteira },
+                novaCarteira
+            );
         }
+
+        // PUT: api/v1/Carteira/1
         [HttpPut("{numero}")]
-        public IActionResult Atualizar(int numero, [FromBody] Carteira carteiraAtualizada)
+        public async Task<IActionResult> Atualizar(
+            int numero,
+            [FromBody] Carteira carteiraAtualizada)
         {
-            var carteira = _carteiras.FirstOrDefault(c => c.NumeroCarteira == numero);
+            var carteira = await _context.Carteira
+                .FirstOrDefaultAsync(c => c.NumeroCarteira == numero);
 
             if (carteira == null)
             {
-                return NotFound(new { message = "Carteira não encontrada." });
+                return NotFound(new
+                {
+                    message = "Carteira não encontrada."
+                });
             }
 
             if (carteiraAtualizada.ApetiteCarteira < 0)
             {
-                return BadRequest(new { message = "O apetite da carteira não pode ser negativo." });
+                return BadRequest(new
+                {
+                    message = "O apetite da carteira não pode ser negativo."
+                });
             }
 
             carteira.NomeCarteira = carteiraAtualizada.NomeCarteira;
             carteira.ApetiteCarteira = carteiraAtualizada.ApetiteCarteira;
 
-            return Ok(carteira);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
+
+        // DELETE: api/v1/Carteira/1
         [HttpDelete("{numero}")]
-        public IActionResult Apagar(int numero)
+        public async Task<IActionResult> Apagar(int numero)
         {
-            var carteira = _carteiras.FirstOrDefault(c => c.NumeroCarteira == numero);
+            var carteira = await _context.Carteira
+                .FirstOrDefaultAsync(c => c.NumeroCarteira == numero);
 
             if (carteira == null)
             {
-                return NotFound(new { message = "Carteira não encontrada." });
+                return NotFound(new
+                {
+                    message = "Carteira não encontrada."
+                });
             }
 
-            _carteiras.Remove(carteira);
+            _context.Carteira.Remove(carteira);
 
-            return Ok(new { message = "Carteira apagada com sucesso." });
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Carteira apagada com sucesso."
+            });
         }
     }
-        
 }
